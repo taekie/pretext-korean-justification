@@ -2942,6 +2942,8 @@ var INFEASIBLE_SPACE_RATIO = 0.4;
 var OVERFLOW_SPACE_RATIO = 0.2;
 var MIN_READABLE_SPACE_RATIO = 0.75;
 var TIGHT_SPACE_RATIO = 0.65;
+var LOOSE_FALLBACK_RATIO = 2.5;
+var looseFallbackEnabled = false;
 function createDemoResources() {
   const measureCanvas = document.createElement("canvas");
   const measureCtx = measureCanvas.getContext("2d");
@@ -3312,6 +3314,8 @@ function getDisplaySpacing(line, normalSpaceWidth) {
   const rawJustifiedSpace = (line.maxWidth - line.wordWidth) / line.spaceCount;
   if (rawJustifiedSpace < normalSpaceWidth * OVERFLOW_SPACE_RATIO)
     return { kind: "overflow" };
+  if (looseFallbackEnabled && rawJustifiedSpace > normalSpaceWidth * LOOSE_FALLBACK_RATIO)
+    return { kind: "ragged" };
   const width = Math.max(rawJustifiedSpace, normalSpaceWidth * MIN_READABLE_SPACE_RATIO);
   return {
     kind: "justified",
@@ -3603,6 +3607,22 @@ dom.showIndicators.addEventListener("input", () => {
   state.events.showIndicatorsInput = dom.showIndicators.checked;
   scheduleRender();
 });
+var looseFallbackCheckbox = document.getElementById("looseFallback");
+var looseThresholdSlider = document.getElementById("looseThreshold");
+var looseThresholdVal = document.getElementById("looseVal");
+if (looseFallbackCheckbox) {
+  looseFallbackCheckbox.addEventListener("input", () => {
+    looseFallbackEnabled = looseFallbackCheckbox.checked;
+    scheduleRender();
+  });
+}
+if (looseThresholdSlider) {
+  looseThresholdSlider.addEventListener("input", () => {
+    LOOSE_FALLBACK_RATIO = Number(looseThresholdSlider.value) / 100;
+    if (looseThresholdVal) looseThresholdVal.textContent = LOOSE_FALLBACK_RATIO.toFixed(1) + "\u00d7";
+    scheduleRender();
+  });
+}
 window.addEventListener("resize", scheduleRender);
 await document.fonts.ready;
 var resources = createDemoResources();
